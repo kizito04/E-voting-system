@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Position, Candidate, Vote } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Image as ImageIcon, Pencil, Trash2, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Image as ImageIcon, Pencil, Trash2, Check, X, Upload, FileSpreadsheet } from 'lucide-react';
 
 export function AdminDashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -28,6 +28,10 @@ export function AdminDashboard() {
   // Position editing state
   const [editingPosId, setEditingPosId] = useState<string | null>(null);
   const [editingPosTitle, setEditingPosTitle] = useState('');
+
+  // Excel upload state
+  const [uploadingVoters, setUploadingVoters] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -98,12 +102,25 @@ export function AdminDashboard() {
   };
 
   const handleDeletePosition = async (posId: string) => {
-    if (!window.confirm('Delete this position? This cannot be undone.')) return;
+    if (!window.confirm('Delete this position and ALL associated candidates? This cannot be undone.')) return;
     setSaving(true);
     try {
-      await deleteDoc(doc(db, 'positions', posId));
+      // Find all candidates associated with this position
+      const associatedCandidates = candidates.filter(c => c.positionId === posId);
+      
+      // Batch delete: position + all its candidates
+      const batch = writeBatch(db);
+      batch.delete(doc(db, 'positions', posId));
+      associatedCandidates.forEach(c => {
+        batch.delete(doc(db, 'candidates', c.id));
+      });
+      await batch.commit();
+
+      // Refresh state
       const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
       setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+      const candSnap = await getDocs(collection(db, 'candidates'));
+      setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
       if (currentPosIndex >= posSnap.docs.length) {
         setCurrentPosIndex(Math.max(0, posSnap.docs.length - 1));
       }
@@ -111,6 +128,79 @@ export function AdminDashboard() {
       handleFirestoreError(err, OperationType.DELETE, 'positions');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Excel voter upload handler
+  const handleVoterUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVoters(true);
+    setUploadMessage(null);
+
+    try {
+      const XLSX = await import('xlsx');
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, { defval: '' });
+
+      if (jsonData.length === 0) {
+        setUploadMessage('Error: Excel file is empty.');
+        setUploadingVoters(false);
+        return;
+      }
+
+      // Detect column names (case-insensitive)
+      const headers = Object.keys(jsonData[0]);
+      const nameCol = headers.find(h => h.toLowerCase().includes('name'));
+      const genderCol = headers.find(h => h.toLowerCase().includes('gender') || h.toLowerCase().includes('sex'));
+
+      if (!nameCol) {
+        setUploadMessage('Error: No "name" column found. Please include a column with "Name" in the header.');
+        setUploadingVoters(false);
+        return;
+      }
+
+      const batch = writeBatch(db);
+      let importCount = 0;
+
+      jsonData.forEach(row => {
+        const name = (row[nameCol] || '').trim();
+        if (!name) return;
+
+        let gender = 'Male';
+        if (genderCol) {
+          const rawGender = (row[genderCol] || '').trim().toLowerCase();
+          if (rawGender.startsWith('f') || rawGender === 'female' || rawGender === 'woman') {
+            gender = 'Female';
+          }
+        }
+
+        const id = name.toLowerCase().replace(/\s+/g, '_');
+        batch.set(doc(db, 'voters', id), {
+          name,
+          name_normalized: name.toLowerCase(),
+          gender,
+          status: 'Not Voted',
+        });
+        importCount++;
+      });
+
+      if (importCount === 0) {
+        setUploadMessage('Error: No valid voter entries found.');
+        setUploadingVoters(false);
+        return;
+      }
+
+      await batch.commit();
+      setUploadMessage(`Successfully imported ${importCount} voters from Excel.`);
+    } catch (err) {
+      console.error('Excel upload error:', err);
+      setUploadMessage('Error: Failed to parse Excel file. Ensure the file is a valid .xlsx or .xls file.');
+    } finally {
+      setUploadingVoters(false);
     }
   };
 
@@ -477,6 +567,48 @@ export function AdminDashboard() {
                    )}
                  </div>
               </div>
+            </div>
+
+            {/* Voter Register Upload */}
+            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30 lg:col-span-2">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="bg-indigo-50 p-3 rounded-2xl">
+                  <FileSpreadsheet className="h-6 w-6 text-indigo-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-900">Upload Voter Register</h3>
+              </div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+                Upload an Excel file (.xlsx or .xls) with voter names and gender. Required columns: "Name" and "Gender" (or "Sex").
+              </p>
+              <div className="flex items-center gap-4">
+                <label className="cursor-pointer bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-slate-900 transition-all text-sm">
+                  <Upload className="h-5 w-5" />
+                  {uploadingVoters ? 'Importing...' : 'Select Excel File'}
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleVoterUpload}
+                    disabled={uploadingVoters}
+                    className="hidden"
+                  />
+                </label>
+                {uploadingVoters && (
+                  <div className="animate-spin h-6 w-6 border-3 border-indigo-600 border-t-transparent rounded-full"></div>
+                )}
+              </div>
+              {uploadMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-6 p-4 rounded-2xl text-sm font-semibold ${
+                    uploadMessage.startsWith('Success')
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                  }`}
+                >
+                  {uploadMessage}
+                </motion.div>
+              )}
             </div>
 
             {/* New Candidate */}

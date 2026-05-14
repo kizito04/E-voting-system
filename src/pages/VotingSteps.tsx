@@ -43,10 +43,16 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
     fetchData();
   }, []);
 
-  const currentPosition = positions[currentStep];
+  // Filter to only positions that have at least one candidate registered
+  const positionsWithCandidates = positions.filter(p =>
+    candidates.some(c => c.positionId === p.id)
+  );
+
+  const currentPosition = positionsWithCandidates[currentStep];
   const positionCandidates = candidates.filter(c => c.positionId === currentPosition?.id);
 
   const handleSelect = (candidateId: string) => {
+    if (!currentPosition) return;
     setSelections(prev => ({
       ...prev,
       [currentPosition.id]: candidateId
@@ -54,7 +60,7 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
   };
 
   const handleNext = () => {
-    if (currentStep < positions.length - 1) {
+    if (currentStep < positionsWithCandidates.length - 1) {
       setCurrentStep(curr => curr + 1);
       window.scrollTo(0, 0);
     }
@@ -103,7 +109,30 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
     );
   }
 
-  const isFinalStep = currentStep === positions.length - 1;
+  if (positionsWithCandidates.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white p-12 rounded-3xl border border-slate-200 shadow-xl max-w-md w-full"
+        >
+          <div className="h-20 w-20 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
+            <Info className="h-10 w-10 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">No Ballots Available</h2>
+          <p className="text-sm text-slate-500 mb-6">
+            There are currently no candidates registered for any positions. Please contact an administrator.
+          </p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-300">
+            Election Setup In Progress
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  const isFinalStep = currentStep === positionsWithCandidates.length - 1;
   const currentSelection = (selections[currentPosition?.id] || '') as string;
 
   return (
@@ -116,13 +145,13 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
                <div className="bg-indigo-600 text-white h-7 w-7 rounded-lg flex items-center justify-center text-sm font-bold shadow-sm shadow-indigo-100">
                  {currentStep + 1}
                </div>
-               <span className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Step {currentStep + 1} of {positions.length}</span>
+               <span className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Step {currentStep + 1} of {positionsWithCandidates.length}</span>
              </div>
              <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight">{currentPosition?.title}</h1>
           </div>
           
           <div className="flex gap-2">
-            {positions.map((_, i) => (
+            {positionsWithCandidates.map((_, i) => (
               <div 
                 key={i} 
                 className={`h-1.5 w-12 rounded-full transition-all duration-300 ${
