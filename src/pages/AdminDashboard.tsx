@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, addDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Position, Candidate, Vote } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Image as ImageIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Image as ImageIcon, Pencil, Trash2, Check, X } from 'lucide-react';
 
 export function AdminDashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -24,6 +24,10 @@ export function AdminDashboard() {
   const [newCandPhoto, setNewCandPhoto] = useState('');
   const [newCandBio, setNewCandBio] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Position editing state
+  const [editingPosId, setEditingPosId] = useState<string | null>(null);
+  const [editingPosTitle, setEditingPosTitle] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -72,6 +76,39 @@ export function AdminDashboard() {
       setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'positions');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdatePosition = async (posId: string) => {
+    if (!editingPosTitle.trim()) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'positions', posId), { title: editingPosTitle.trim() });
+      setEditingPosId(null);
+      setEditingPosTitle('');
+      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
+      setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, 'positions');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePosition = async (posId: string) => {
+    if (!window.confirm('Delete this position? This cannot be undone.')) return;
+    setSaving(true);
+    try {
+      await deleteDoc(doc(db, 'positions', posId));
+      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
+      setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+      if (currentPosIndex >= posSnap.docs.length) {
+        setCurrentPosIndex(Math.max(0, posSnap.docs.length - 1));
+      }
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'positions');
     } finally {
       setSaving(false);
     }
@@ -234,7 +271,7 @@ export function AdminDashboard() {
             {/* Pagination Controls */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm">
                 <div className="pl-4">
-                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest block mb-1">Navigation</span>
+                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest block mb-1">Reports</span>
                   <h3 className="text-lg font-bold text-slate-900">{currentPosition?.title} Report</h3>
                 </div>
                 <div className="flex gap-4 pr-4">
@@ -378,11 +415,66 @@ export function AdminDashboard() {
                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Current Positions</h4>
                  <div className="space-y-3">
                    {positions.map(p => (
-                     <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <span className="font-bold text-slate-700">{p.title}</span>
-                        <span className="text-[10px] font-bold bg-white px-3 py-1 rounded-full border border-slate-100 text-slate-400">Order: {p.order}</span>
+                     <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                        {editingPosId === p.id ? (
+                          <div className="flex items-center gap-2 w-full">
+                            <input
+                              type="text"
+                              value={editingPosTitle}
+                              onChange={(e) => setEditingPosTitle(e.target.value)}
+                              className="flex-1 bg-white border border-indigo-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleUpdatePosition(p.id);
+                                if (e.key === 'Escape') { setEditingPosId(null); setEditingPosTitle(''); }
+                              }}
+                            />
+                            <button
+                              onClick={() => handleUpdatePosition(p.id)}
+                              disabled={saving}
+                              className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all disabled:opacity-50 flex-shrink-0"
+                              title="Save"
+                            >
+                              <Check className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => { setEditingPosId(null); setEditingPosTitle(''); }}
+                              disabled={saving}
+                              className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-all disabled:opacity-50 flex-shrink-0"
+                              title="Cancel"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="font-bold text-slate-700">{p.title}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold bg-white px-3 py-1 rounded-full border border-slate-100 text-slate-400">Order: {p.order}</span>
+                              <button
+                                onClick={() => { setEditingPosId(p.id); setEditingPosTitle(p.title); }}
+                                disabled={saving}
+                                className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                title="Edit"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeletePosition(p.id)}
+                                disabled={saving}
+                                className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                      </div>
                    ))}
+                   {positions.length === 0 && (
+                     <p className="text-center text-slate-300 text-xs font-bold uppercase tracking-widest py-6">No positions defined yet</p>
+                   )}
                  </div>
               </div>
             </div>

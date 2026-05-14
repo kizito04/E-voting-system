@@ -49,7 +49,7 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
         </div>
       </header>
       
-      <main className="pt-24 pb-12">
+<main className="pt-20 pb-12">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           {children}
         </div>

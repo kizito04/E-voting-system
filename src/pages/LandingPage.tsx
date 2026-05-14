@@ -84,7 +84,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
               onClick={() => navigate('/vote')}
               className="w-full bg-indigo-600 text-white py-4 rounded-xl text-lg font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 group"
             >
-              Continue to Booth
+              Continue to Vote
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </button>
           )}
@@ -94,7 +94,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center py-20">
+    <div className="flex flex-col items-center justify-center pt-4 pb-20">
       <div className="grid lg:grid-cols-2 gap-20 items-center max-w-6xl w-full">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -103,8 +103,8 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           <div className="bg-indigo-100 inline-block px-4 py-1.5 rounded-full text-indigo-700 text-xs font-bold uppercase tracking-widest mb-6">
             E-Voting
           </div>
-          <h1 className="text-6xl font-extrabold text-slate-900 leading-[1.1] mb-6">
-            KISA KYU CHAPTER<br/>
+          <h1 className="text-3xl font-extrabold text-slate-900 leading-[1.1] mb-6">
+            KISA KYU<br/>
           </h1>
           <div className="flex gap-4 items-center text-sm font-semibold text-slate-400">
              <div className="flex -space-x-3">

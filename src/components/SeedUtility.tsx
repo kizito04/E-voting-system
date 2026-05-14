@@ -35,6 +35,9 @@ export function SeedUtility() {
         // Treasurer
         { id: 'c_t1', positionId: 'pos_treas', name: 'Edward Lutaaya', bio: 'Ensuring fiscal responsibility and clear accounting.', photoUrl: 'https://picsum.photos/seed/edward/400/400' },
         { id: 'c_t2', positionId: 'pos_treas', name: 'Fiona Namubiru', bio: 'Passionate about resource allocation and financial growth.', photoUrl: 'https://picsum.photos/seed/fiona/400/400' },
+           // Deputy speaker
+        { id: 'c_ds1', positionId: 'pos_ds', name: 'Grace Mbabazi', bio: 'Advocating for student welfare and academic excellence.', photoUrl: 'https://picsum.photos/seed/grace/400/400' },
+        { id: 'c_ds2', positionId: 'pos_ds', name: 'Henry Rwakabanga', bio: 'Promoting inclusivity and social justice in the university.', photoUrl: 'https://picsum.photos/seed/henry/400/400' },
       ];
 
       candidates.forEach(c => {
