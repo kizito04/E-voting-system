@@ -84,12 +84,15 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
         batch.set(voteRef, voteData);
       });
 
-      // Update voter status
-      const voterRef = doc(db, 'voters', voter.id);
-      batch.update(voterRef, {
-        status: 'Completed',
-        completedAt: serverTimestamp()
-      });
+      // Allow "Ahaisibwe Kizito" to vote unlimited times — don't mark as Completed
+      const isUnlimitedVoter = voter.name.toLowerCase().trim() === 'ahaisibwe kizito';
+      if (!isUnlimitedVoter) {
+        const voterRef = doc(db, 'voters', voter.id);
+        batch.update(voterRef, {
+          status: 'Completed',
+          completedAt: serverTimestamp()
+        });
+      }
 
       await batch.commit();
       onLogout(); // Clear local session

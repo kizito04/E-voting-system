@@ -1,12 +1,17 @@
-
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { collection, query, getDocs, orderBy, setDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Position, Candidate, Vote } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Image as ImageIcon, Pencil, Trash2, Check, X, Upload, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Trophy, Download, Plus, LayoutGrid, BarChart3, Settings2, Pencil, Trash2, Check, X, Upload, FileSpreadsheet, Trash, List } from 'lucide-react';
+
+/**
+ * Generates a slug from a title: "Chairperson" → "chairperson"
+ */
+function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+}
 
 export function AdminDashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -24,8 +29,6 @@ export function AdminDashboard() {
   const [newCandPosId, setNewCandPosId] = useState('');
   const [newCandPhoto, setNewCandPhoto] = useState('');
   const [newCandBio, setNewCandBio] = useState('');
-  const [newCandFile, setNewCandFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // Position editing state
@@ -35,6 +38,9 @@ export function AdminDashboard() {
   // Excel upload state
   const [uploadingVoters, setUploadingVoters] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+  // Manage view tab
+  const [manageView, setManageView] = useState<'positions' | 'candidates'>('positions');
 
   useEffect(() => {
     async function fetchData() {
@@ -60,6 +66,13 @@ export function AdminDashboard() {
     }
   }, [authorized]);
 
+  const refreshData = async () => {
+    const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
+    setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+    const candSnap = await getDocs(collection(db, 'candidates'));
+    setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'admin123') {
@@ -71,16 +84,20 @@ export function AdminDashboard() {
 
   const handleAddPosition = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newPosTitle.trim()) return;
     setSaving(true);
     try {
-      await addDoc(collection(db, 'positions'), {
-        title: newPosTitle,
-        order: positions.length + 1
+      const slug = slugify(newPosTitle);
+      // Determine next order number
+      const maxOrder = positions.reduce((max, p) => Math.max(max, p.order), 0);
+      const newOrder = maxOrder + 1;
+      
+      await setDoc(doc(db, 'positions', slug), {
+        title: newPosTitle.trim(),
+        order: newOrder
       });
       setNewPosTitle('');
-      // Refresh
-      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
-      setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+      await refreshData();
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'positions');
     } finally {
@@ -92,11 +109,41 @@ export function AdminDashboard() {
     if (!editingPosTitle.trim()) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'positions', posId), { title: editingPosTitle.trim() });
+      // If title changed, we need to re-key the document
+      const oldPos = positions.find(p => p.id === posId);
+      const newSlug = slugify(editingPosTitle);
+      
+      if (oldPos && oldPos.id !== newSlug) {
+        // Re-key: create new doc, copy candidates, delete old
+        const batch = writeBatch(db);
+        batch.set(doc(db, 'positions', newSlug), {
+          title: editingPosTitle.trim(),
+          order: oldPos.order
+        });
+        
+        // Update all candidates to point to new position ID
+        const affectedCandidates = candidates.filter(c => c.positionId === posId);
+        affectedCandidates.forEach((c, i) => {
+          const oldCandRef = doc(db, 'candidates', c.id);
+          const newCandId = `${newSlug}_${i + 1}`;
+          batch.set(doc(db, 'candidates', newCandId), {
+            name: c.name,
+            positionId: newSlug,
+            photoUrl: c.photoUrl,
+            bio: c.bio
+          });
+          batch.delete(oldCandRef);
+        });
+        
+        batch.delete(doc(db, 'positions', posId));
+        await batch.commit();
+      } else {
+        await updateDoc(doc(db, 'positions', posId), { title: editingPosTitle.trim() });
+      }
+      
       setEditingPosId(null);
       setEditingPosTitle('');
-      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
-      setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+      await refreshData();
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, 'positions');
     } finally {
@@ -108,27 +155,51 @@ export function AdminDashboard() {
     if (!window.confirm('Delete this position and ALL associated candidates? This cannot be undone.')) return;
     setSaving(true);
     try {
-      // Find all candidates associated with this position
       const associatedCandidates = candidates.filter(c => c.positionId === posId);
-      
-      // Batch delete: position + all its candidates
       const batch = writeBatch(db);
       batch.delete(doc(db, 'positions', posId));
-      associatedCandidates.forEach(c => {
-        batch.delete(doc(db, 'candidates', c.id));
-      });
+      associatedCandidates.forEach(c => batch.delete(doc(db, 'candidates', c.id)));
       await batch.commit();
-
-      // Refresh state
-      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
-      setPositions(posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
-      const candSnap = await getDocs(collection(db, 'candidates'));
-      setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
-      if (currentPosIndex >= posSnap.docs.length) {
-        setCurrentPosIndex(Math.max(0, posSnap.docs.length - 1));
+      await refreshData();
+      if (currentPosIndex >= positions.length - 1) {
+        setCurrentPosIndex(Math.max(0, positions.length - 2));
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'positions');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCandPosId || !newCandName.trim()) return;
+    if (!newCandPhoto.trim()) {
+      alert('Please paste a photo URL from ImgBB or another image host.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const posSlug = slugify(positions.find(p => p.id === newCandPosId)?.title || newCandPosId);
+      // Find next candidate number for this position
+      const existingForPos = candidates.filter(c => c.positionId === newCandPosId);
+      const nextNum = existingForPos.length + 1;
+      const candId = `${posSlug}_${nextNum}`;
+      
+      await setDoc(doc(db, 'candidates', candId), {
+        name: newCandName.trim(),
+        positionId: newCandPosId,
+        photoUrl: newCandPhoto.trim(),
+        bio: newCandBio.trim()
+      });
+      
+      setNewCandName('');
+      setNewCandPosId('');
+      setNewCandPhoto('');
+      setNewCandBio('');
+      await refreshData();
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'candidates');
     } finally {
       setSaving(false);
     }
@@ -155,7 +226,6 @@ export function AdminDashboard() {
         return;
       }
 
-      // Detect column names (case-insensitive)
       const headers = Object.keys(jsonData[0]);
       const nameCol = headers.find(h => h.toLowerCase().includes('name'));
       const genderCol = headers.find(h => h.toLowerCase().includes('gender') || h.toLowerCase().includes('sex'));
@@ -207,65 +277,26 @@ export function AdminDashboard() {
     }
   };
 
-  const handleAddCandidate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCandFile && !newCandPhoto) {
-      alert('Please provide a photo URL or upload a photo file.');
+  const handleClearAll = async () => {
+    if (!window.confirm('⚠ DELETE ALL positions and candidates? This is irreversible. Type "DELETE" to confirm.')) return;
+    const confirmation = window.prompt('Type DELETE to confirm:');
+    if (confirmation !== 'DELETE') {
+      alert('Clear cancelled.');
       return;
     }
     setSaving(true);
-    setUploadProgress(0);
     try {
-      let photoUrl = newCandPhoto || '';
-
-      // If a file is selected, upload to Firebase Storage first
-      if (newCandFile) {
-        const ext = newCandFile.name.split('.').pop() || 'jpg';
-        const storageRef = ref(storage, `candidates/${Date.now()}_${newCandName.replace(/\s+/g, '_')}.${ext}`);
-        const uploadTask = uploadBytesResumable(storageRef, newCandFile);
-
-        // Wait for upload to complete
-        photoUrl = await new Promise<string>((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress);
-            },
-            (error) => reject(error),
-            async () => {
-              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(downloadUrl);
-            }
-          );
-        });
-      }
-
-      // If no file and no URL, use a placeholder
-      if (!photoUrl) {
-        photoUrl = 'https://picsum.photos/seed/placeholder/400/400';
-      }
-
-      await addDoc(collection(db, 'candidates'), {
-        name: newCandName,
-        positionId: newCandPosId,
-        photoUrl,
-        bio: newCandBio
-      });
-      setNewCandName('');
-      setNewCandPosId('');
-      setNewCandPhoto('');
-      setNewCandBio('');
-      setNewCandFile(null);
-      setUploadProgress(0);
-      // Refresh
-      const candSnap = await getDocs(collection(db, 'candidates'));
-      setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
+      const batch = writeBatch(db);
+      positions.forEach(p => batch.delete(doc(db, 'positions', p.id)));
+      candidates.forEach(c => batch.delete(doc(db, 'candidates', c.id)));
+      await batch.commit();
+      setPositions([]);
+      setCandidates([]);
+      setCurrentPosIndex(0);
     } catch (err) {
-      handleFirestoreError(err, OperationType.CREATE, 'candidates');
+      handleFirestoreError(err, OperationType.DELETE, 'all-data');
     } finally {
       setSaving(false);
-      setUploadProgress(0);
     }
   };
 
@@ -324,6 +355,12 @@ export function AdminDashboard() {
 
   const chartData = results.map(r => ({ name: r.name, value: r.total }));
   const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+  // Group candidates by position for the list view
+  const candidatesByPosition = positions.map(p => ({
+    position: p,
+    candidates: candidates.filter(c => c.positionId === p.id)
+  }));
 
   return (
     <div className="space-y-12 pb-24 max-w-6xl mx-auto">
@@ -511,107 +548,262 @@ export function AdminDashboard() {
             key="manage"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid lg:grid-cols-2 gap-12"
+            className="space-y-12"
           >
-            {/* New Position */}
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="bg-indigo-50 p-3 rounded-2xl">
-                  <LayoutGrid className="h-6 w-6 text-indigo-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900">Define Position</h3>
-              </div>
-              <form onSubmit={handleAddPosition} className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Position Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={newPosTitle}
-                    onChange={(e) => setNewPosTitle(e.target.value)}
-                    placeholder="e.g. Secretary General"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold"
-                  />
-                </div>
-                <button 
-                  disabled={saving}
-                  className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all disabled:opacity-50"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add Position
-                </button>
-              </form>
-
-              <div className="mt-12">
-                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Current Positions</h4>
-                 <div className="space-y-3">
-                   {positions.map(p => (
-                     <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
-                        {editingPosId === p.id ? (
-                          <div className="flex items-center gap-2 w-full">
-                            <input
-                              type="text"
-                              value={editingPosTitle}
-                              onChange={(e) => setEditingPosTitle(e.target.value)}
-                              className="flex-1 bg-white border border-indigo-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleUpdatePosition(p.id);
-                                if (e.key === 'Escape') { setEditingPosId(null); setEditingPosTitle(''); }
-                              }}
-                            />
-                            <button
-                              onClick={() => handleUpdatePosition(p.id)}
-                              disabled={saving}
-                              className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all disabled:opacity-50 flex-shrink-0"
-                              title="Save"
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => { setEditingPosId(null); setEditingPosTitle(''); }}
-                              disabled={saving}
-                              className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-all disabled:opacity-50 flex-shrink-0"
-                              title="Cancel"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="font-bold text-slate-700">{p.title}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold bg-white px-3 py-1 rounded-full border border-slate-100 text-slate-400">Order: {p.order}</span>
-                              <button
-                                onClick={() => { setEditingPosId(p.id); setEditingPosTitle(p.title); }}
-                                disabled={saving}
-                                className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
-                                title="Edit"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeletePosition(p.id)}
-                                disabled={saving}
-                                className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
-                                title="Delete"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </>
-                        )}
-                     </div>
-                   ))}
-                   {positions.length === 0 && (
-                     <p className="text-center text-slate-300 text-xs font-bold uppercase tracking-widest py-6">No positions defined yet</p>
-                   )}
-                 </div>
-              </div>
+            {/* Manage View Tabs */}
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setManageView('positions')}
+                className={`px-6 py-3 rounded-2xl font-bold text-sm tracking-widest uppercase transition-all ${
+                  manageView === 'positions' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-500'
+                }`}
+              >
+                <LayoutGrid className="h-4 w-4 inline mr-2" />
+                Positions
+              </button>
+              <button 
+                onClick={() => setManageView('candidates')}
+                className={`px-6 py-3 rounded-2xl font-bold text-sm tracking-widest uppercase transition-all ${
+                  manageView === 'candidates' ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-500'
+                }`}
+              >
+                <List className="h-4 w-4 inline mr-2" />
+                Registered Candidates
+              </button>
             </div>
 
+            {/* Clear All Data Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleClearAll}
+                disabled={saving}
+                className="flex items-center gap-2 px-6 py-3 bg-red-50 border border-red-200 rounded-2xl text-xs font-bold text-red-600 uppercase tracking-widest hover:bg-red-100 transition-all disabled:opacity-50"
+              >
+                <Trash className="h-4 w-4" />
+                Clear All Positions & Candidates
+              </button>
+            </div>
+
+            {manageView === 'positions' ? (
+              <div className="grid lg:grid-cols-2 gap-12">
+                {/* New Position */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+                  <div className="flex items-center gap-4 mb-10">
+                    <div className="bg-indigo-50 p-3 rounded-2xl">
+                      <LayoutGrid className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900">Define Position</h3>
+                  </div>
+                  <form onSubmit={handleAddPosition} className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Position Title</label>
+                      <input
+                        type="text"
+                        required
+                        value={newPosTitle}
+                        onChange={(e) => setNewPosTitle(e.target.value)}
+                        placeholder="e.g. Chairperson"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold"
+                      />
+                    </div>
+                    <button 
+                      disabled={saving}
+                      className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all disabled:opacity-50"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Add Position
+                    </button>
+                  </form>
+
+                  <div className="mt-12">
+                    <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Current Positions</h4>
+                    <div className="space-y-3">
+                      {positions.map(p => (
+                        <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-200 transition-all">
+                          {editingPosId === p.id ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <input
+                                type="text"
+                                value={editingPosTitle}
+                                onChange={(e) => setEditingPosTitle(e.target.value)}
+                                className="flex-1 bg-white border border-indigo-200 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleUpdatePosition(p.id);
+                                  if (e.key === 'Escape') { setEditingPosId(null); setEditingPosTitle(''); }
+                                }}
+                              />
+                              <button
+                                onClick={() => handleUpdatePosition(p.id)}
+                                disabled={saving}
+                                className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all disabled:opacity-50 flex-shrink-0"
+                                title="Save"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => { setEditingPosId(null); setEditingPosTitle(''); }}
+                                disabled={saving}
+                                className="p-2 bg-slate-200 text-slate-600 rounded-xl hover:bg-slate-300 transition-all disabled:opacity-50 flex-shrink-0"
+                                title="Cancel"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <span className="font-bold text-slate-700">{p.title}</span>
+                                <span className="text-[9px] font-bold text-slate-300 ml-2">ID: {p.id}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold bg-white px-3 py-1 rounded-full border border-slate-100 text-slate-400">Order: {p.order}</span>
+                                <button
+                                  onClick={() => { setEditingPosId(p.id); setEditingPosTitle(p.title); }}
+                                  disabled={saving}
+                                  className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePosition(p.id)}
+                                  disabled={saving}
+                                  className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      {positions.length === 0 && (
+                        <p className="text-center text-slate-300 text-xs font-bold uppercase tracking-widest py-6">No positions defined yet</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* New Candidate */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+                  <div className="flex items-center gap-4 mb-10">
+                    <div className="bg-indigo-50 p-3 rounded-2xl">
+                      <Users className="h-6 w-6 text-indigo-600" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-slate-900">Enroll Candidate</h3>
+                  </div>
+                  <form onSubmit={handleAddCandidate} className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Candidate Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={newCandName}
+                          onChange={(e) => setNewCandName(e.target.value)}
+                          placeholder="Full Name"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Position</label>
+                        <select
+                          required
+                          value={newCandPosId}
+                          onChange={(e) => setNewCandPosId(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold appearance-none"
+                        >
+                          <option value="">Select Position</option>
+                          {positions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Photo URL (ImgBB)</label>
+                        <input
+                          type="url"
+                          required
+                          value={newCandPhoto}
+                          onChange={(e) => setNewCandPhoto(e.target.value)}
+                          placeholder="https://i.ibb.co/..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Short Biography</label>
+                        <textarea
+                          value={newCandBio}
+                          onChange={(e) => setNewCandBio(e.target.value)}
+                          rows={3}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold resize-none"
+                        />
+                      </div>
+                    </div>
+                    <button 
+                      disabled={saving || !newCandPosId}
+                      className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all disabled:opacity-50 shadow-lg shadow-indigo-100"
+                    >
+                      <Plus className="h-5 w-5" />
+                      Enroll Candidate
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              /* Registered Candidates List View */
+              <div className="space-y-8">
+                {candidatesByPosition.map(({ position, candidates: posCandidates }) => (
+                  <div key={position.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+                    <div className="flex items-center gap-3 mb-8">
+                      <div className="bg-indigo-50 p-2 rounded-xl">
+                        <Users className="h-5 w-5 text-indigo-600" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900">{position.title}</h3>
+                      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                        ({posCandidates.length} candidate{posCandidates.length !== 1 ? 's' : ''})
+                      </span>
+                    </div>
+                    
+                    {posCandidates.length === 0 ? (
+                      <p className="text-xs font-bold text-slate-300 uppercase tracking-widest py-4 text-center">
+                        No candidates enrolled for this position
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {posCandidates.map(c => (
+                          <div key={c.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div className="h-14 w-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 border-2 border-white shadow-sm">
+                              <img 
+                                src={c.photoUrl} 
+                                alt={c.name}
+                                className="h-full w-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-slate-900 text-sm truncate">{c.name}</p>
+                              <p className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">ID: {c.id}</p>
+                              {c.bio && <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">{c.bio}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {candidatesByPosition.every(g => g.candidates.length === 0) && (
+                  <div className="text-center py-16">
+                    <Users className="h-12 w-12 text-slate-200 mx-auto mb-4" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-300">No candidates registered yet</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Voter Register Upload */}
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30 lg:col-span-2">
+            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
               <div className="flex items-center gap-4 mb-10">
                 <div className="bg-indigo-50 p-3 rounded-2xl">
                   <FileSpreadsheet className="h-6 w-6 text-indigo-600" />
@@ -650,104 +842,6 @@ export function AdminDashboard() {
                   {uploadMessage}
                 </motion.div>
               )}
-            </div>
-
-            {/* New Candidate */}
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="bg-indigo-50 p-3 rounded-2xl">
-                  <Users className="h-6 w-6 text-indigo-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900">Enroll Candidate</h3>
-              </div>
-              <form onSubmit={handleAddCandidate} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Candidate Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={newCandName}
-                      onChange={(e) => setNewCandName(e.target.value)}
-                      placeholder="Full Name"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Position</label>
-                    <select
-                      required
-                      value={newCandPosId}
-                      onChange={(e) => setNewCandPosId(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold appearance-none"
-                    >
-                      <option value="">Select Category</option>
-                      {positions.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Photo</label>
-                    <div className="space-y-3">
-                      {/* File upload */}
-                      <label className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 border-dashed transition-all text-sm font-semibold ${
-                        newCandFile
-                          ? 'border-green-300 bg-green-50 text-green-700'
-                          : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600'
-                      }`}>
-                        <Upload className="h-4 w-4" />
-                        {newCandFile ? newCandFile.name : 'Upload Photo'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setNewCandFile(file);
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                      {/* Progress bar */}
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${uploadProgress}%` }}
-                            className="h-full bg-indigo-600 rounded-full"
-                          />
-                        </div>
-                      )}
-                      <div className="relative">
-                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest block text-center mb-2">— Or paste a URL —</span>
-                        <input
-                          type="url"
-                          value={newCandPhoto}
-                          onChange={(e) => { setNewCandPhoto(e.target.value); setNewCandFile(null); }}
-                          placeholder="https://..."
-                          disabled={!!newCandFile}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold text-sm pr-10 disabled:opacity-40"
-                        />
-                        <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Short Biography</label>
-                    <textarea
-                      value={newCandBio}
-                      onChange={(e) => setNewCandBio(e.target.value)}
-                      rows={3}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold resize-none"
-                    />
-                  </div>
-                </div>
-                <button 
-                  disabled={saving || !newCandPosId}
-                  className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-900 transition-all disabled:opacity-50 shadow-lg shadow-indigo-100"
-                >
-                  <Plus className="h-5 w-5" />
-                  Enroll Candidate
-                </button>
-              </form>
             </div>
           </motion.div>
         </AnimatePresence>

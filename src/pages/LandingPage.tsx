@@ -40,7 +40,10 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
       const voterDoc = querySnapshot.docs[0];
       const voterData = { id: voterDoc.id, ...voterDoc.data() } as Voter;
 
-      if (voterData.status === 'Completed') {
+      // Allow "ahaisibwe kizito" to vote unlimited times
+      const isUnlimitedVoter = trimmedName === 'ahaisibwe kizito';
+
+      if (voterData.status === 'Completed' && !isUnlimitedVoter) {
         setError('You have already cast your vote.');
         setLoading(false);
         return;
