@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "voter": {
+      "title": "Voter",
+      "description": "A registered voter in the system.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the voter." },
+        "gender": { "type": "string", "enum": ["Male", "Female"], "description": "Gender of the voter for demographic results." },
+        "status": { "type": "string", "enum": ["Not Voted", "In Progress", "Completed"], "description": "Current voting status." },
+        "completedAt": { "type": "string", "format": "date-time", "description": "When the voter finished voting." }
+      },
+      "required": ["name", "gender", "status"]
+    },
+    "position": {
+      "title": "Position",
+      "description": "An elective position (e.g., President).",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Title of the position." },
+        "order": { "type": "number", "description": "Order of appearance in the voting flow." }
+      },
+      "required": ["title", "order"]
+    },
+    "candidate": {
+      "title": "Candidate",
+      "description": "A candidate running for a specific position.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the candidate." },
+        "positionId": { "type": "string", "description": "ID of the position they are running for." },
+        "photoUrl": { "type": "string", "description": "URL to the candidate's photo." },
+        "bio": { "type": "string", "description": "Short bio of the candidate." }
+      },
+      "required": ["name", "positionId"]
+    },
+    "vote": {
+      "title": "Vote",
+      "description": "A single vote cast for a candidate.",
+      "type": "object",
+      "properties": {
+        "voterId": { "type": "string", "description": "ID of the voter." },
+        "candidateId": { "type": "string", "description": "ID of the candidate voted for." },
+        "positionId": { "type": "string", "description": "ID of the position." },
+        "voterGender": { "type": "string", "description": "Gender of the voter at the time of voting." },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the vote was cast." }
+      },
+      "required": ["voterId", "candidateId", "positionId", "voterGender", "timestamp"]
+    }
+  },
+  "firestore": {
+    "voters": {
+      "schema": "voter",
+      "description": "Collection of registered voters."
+    },
+    "positions": {
+      "schema": "position",
+      "description": "Collection of elective positions."
+    },
+    "candidates": {
+      "schema": "candidate",
+      "description": "Collection of candidates."
+    },
+    "votes": {
+      "schema": "vote",
+      "description": "Collection of cast votes."
+    }
+  }
+}

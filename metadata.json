@@ -1,0 +1,6 @@
+{
+  "name": "SecureVote",
+  "description": "A secure, multi-step voting application with a voter register gatekeeper and an admin dashboard for real-time results.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

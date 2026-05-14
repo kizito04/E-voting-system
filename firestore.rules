@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      // In this app we don't strictly use Firebase Auth, but we use names from the register.
+      // For the sake of this prompt, we allow operations based on voter ID knowledge.
+      return true; 
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 2. Validation Blueprint for Voters
+    function isValidVoter(data) {
+      return data.name is string && data.name.size() <= 100 &&
+             data.gender in ['Male', 'Female'] &&
+             data.status in ['Not Voted', 'In Progress', 'Completed'];
+    }
+
+    // 2. Validation Blueprint for Votes
+    function isValidVote(data) {
+      return data.voterId is string &&
+             data.candidateId is string &&
+             data.positionId is string &&
+             data.voterGender in ['Male', 'Female'] &&
+             data.timestamp == request.time;
+    }
+
+    // Voters Rules
+    match /voters/{voterId} {
+      // Gatekeeper needs to find the voter and query by name
+      allow get: if true;
+      allow list: if true; // Required for the query by name_normalized
+
+      // Update status to 'In Progress' (Start) or 'Completed' (Submit)
+      allow update: if (
+        isValidVoter(incoming()) && (
+          // Action: Start voting session
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'sessionId'])) ||
+          // Action: Complete voting
+          (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'completedAt']))
+        )
+      );
+      
+      // Development seed
+      allow create: if true; 
+    }
+
+    // Static collections
+    match /positions/{posId} {
+      allow read: if true;
+      allow create, update: if true; // Allowed for admin organization
+    }
+    match /candidates/{candId} {
+      allow read: if true;
+      allow create, update: if true; // Allowed for admin organization
+    }
+
+    // 8. Secure List Queries (Votes)
+    match /votes/{voteId} {
+      allow create: if isValidVote(incoming());
+      
+      // Admin results: allow reading everything for results
+      // In a real app we'd verify admin status
+      allow read: if true; 
+      allow list: if true;
+    }
+  }
+}
