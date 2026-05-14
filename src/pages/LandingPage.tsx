@@ -101,15 +101,11 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           animate={{ opacity: 1, x: 0 }}
         >
           <div className="bg-indigo-100 inline-block px-4 py-1.5 rounded-full text-indigo-700 text-xs font-bold uppercase tracking-widest mb-6">
-            Secure Voting v2.1
+            E-Voting
           </div>
           <h1 className="text-6xl font-extrabold text-slate-900 leading-[1.1] mb-6">
-            Your Voice,<br/>
-            <span className="text-indigo-600">Perfectly Secure.</span>
+            KISA KYU CHAPTER<br/>
           </h1>
-          <p className="text-lg text-slate-500 max-w-md leading-relaxed mb-8">
-            Enter your registered name to access the encrypted voting environment. Real-time tallying and demographic insights.
-          </p>
           <div className="flex gap-4 items-center text-sm font-semibold text-slate-400">
              <div className="flex -space-x-3">
                {[1,2,3].map(i => (
@@ -165,7 +161,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
             >
               {loading ? 'Processing...' : (
                 <>
-                  Enter Voting Booth
+                    Verify Identity
                   <ArrowRight className="h-6 w-6 group-hover:translate-x-1.5 transition-transform" />
                 </>
               )}
