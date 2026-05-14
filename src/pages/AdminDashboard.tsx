@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, orderBy, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { db, storage, handleFirestoreError, OperationType } from '../lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { Position, Candidate, Vote } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -23,6 +24,8 @@ export function AdminDashboard() {
   const [newCandPosId, setNewCandPosId] = useState('');
   const [newCandPhoto, setNewCandPhoto] = useState('');
   const [newCandBio, setNewCandBio] = useState('');
+  const [newCandFile, setNewCandFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [saving, setSaving] = useState(false);
 
   // Position editing state
@@ -206,18 +209,55 @@ export function AdminDashboard() {
 
   const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newCandFile && !newCandPhoto) {
+      alert('Please provide a photo URL or upload a photo file.');
+      return;
+    }
     setSaving(true);
+    setUploadProgress(0);
     try {
+      let photoUrl = newCandPhoto || '';
+
+      // If a file is selected, upload to Firebase Storage first
+      if (newCandFile) {
+        const ext = newCandFile.name.split('.').pop() || 'jpg';
+        const storageRef = ref(storage, `candidates/${Date.now()}_${newCandName.replace(/\s+/g, '_')}.${ext}`);
+        const uploadTask = uploadBytesResumable(storageRef, newCandFile);
+
+        // Wait for upload to complete
+        photoUrl = await new Promise<string>((resolve, reject) => {
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            },
+            (error) => reject(error),
+            async () => {
+              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(downloadUrl);
+            }
+          );
+        });
+      }
+
+      // If no file and no URL, use a placeholder
+      if (!photoUrl) {
+        photoUrl = 'https://picsum.photos/seed/placeholder/400/400';
+      }
+
       await addDoc(collection(db, 'candidates'), {
         name: newCandName,
         positionId: newCandPosId,
-        photoUrl: newCandPhoto || 'https://picsum.photos/seed/placeholder/400/400',
+        photoUrl,
         bio: newCandBio
       });
       setNewCandName('');
       setNewCandPosId('');
       setNewCandPhoto('');
       setNewCandBio('');
+      setNewCandFile(null);
+      setUploadProgress(0);
       // Refresh
       const candSnap = await getDocs(collection(db, 'candidates'));
       setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
@@ -225,6 +265,7 @@ export function AdminDashboard() {
       handleFirestoreError(err, OperationType.CREATE, 'candidates');
     } finally {
       setSaving(false);
+      setUploadProgress(0);
     }
   };
 
@@ -645,16 +686,48 @@ export function AdminDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Photo URL</label>
-                    <div className="relative">
-                      <input
-                        type="url"
-                        value={newCandPhoto}
-                        onChange={(e) => setNewCandPhoto(e.target.value)}
-                        placeholder="https://..."
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold pr-12"
-                      />
-                      <ImageIcon className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Photo</label>
+                    <div className="space-y-3">
+                      {/* File upload */}
+                      <label className={`cursor-pointer flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 border-dashed transition-all text-sm font-semibold ${
+                        newCandFile
+                          ? 'border-green-300 bg-green-50 text-green-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-400 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600'
+                      }`}>
+                        <Upload className="h-4 w-4" />
+                        {newCandFile ? newCandFile.name : 'Upload Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setNewCandFile(file);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {/* Progress bar */}
+                      {uploadProgress > 0 && uploadProgress < 100 && (
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            className="h-full bg-indigo-600 rounded-full"
+                          />
+                        </div>
+                      )}
+                      <div className="relative">
+                        <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest block text-center mb-2">— Or paste a URL —</span>
+                        <input
+                          type="url"
+                          value={newCandPhoto}
+                          onChange={(e) => { setNewCandPhoto(e.target.value); setNewCandFile(null); }}
+                          placeholder="https://..."
+                          disabled={!!newCandFile}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-semibold text-sm pr-10 disabled:opacity-40"
+                        />
+                        <ImageIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                      </div>
                     </div>
                   </div>
                   <div className="md:col-span-2">
