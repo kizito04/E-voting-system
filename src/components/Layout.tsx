@@ -43,7 +43,7 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
               className="group flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg transition-colors border border-transparent hover:border-slate-200"
             >
               <Shield className="h-4 w-4 text-slate-400 group-hover:text-indigo-600" />
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-indigo-600">Admin</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-indigo-600">Voter</span>
             </Link>
           </nav>
         </div>
@@ -67,7 +67,7 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
             </div>
             <div className="flex gap-8 text-[11px] font-bold uppercase tracking-widest">
               <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
-              <Link to="/admin" className="text-slate-400 hover:text-indigo-600 transition-colors">Admin</Link>
+              <Link to="/admin" className="text-slate-400 hover:text-indigo-600 transition-colors">E-vote</Link>
               <a href="#" className="hover:text-indigo-600 transition-colors">Terms</a>
             </div>
           </div>
