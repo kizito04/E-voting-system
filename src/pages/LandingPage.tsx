@@ -103,8 +103,8 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           animate={{ opacity: 1, x: 0 }}
         >
           
-          <h1 className="text-3xl font-extrabold text-slate-900 leading-[1.1] mb-6">
-            KISA KYU<br/>
+          <h1 className="text-4xl font-extrabold text-slate-900 leading-[1.1] mb-6">
+            KISA KYU
           </h1>
           <div className="flex gap-4 items-center text-sm font-semibold text-slate-400">
              
