@@ -3,6 +3,7 @@ export interface Voter {
   id: string;
   name: string;
   gender: 'Male' | 'Female';
+  email: string;
   status: 'Not Voted' | 'In Progress' | 'Completed';
   completedAt?: any;
   sessionId?: string;
