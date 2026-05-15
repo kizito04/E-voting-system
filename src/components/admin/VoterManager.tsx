@@ -38,6 +38,7 @@ export function VoterManager({ voters, loading: parentLoading }: VoterManagerPro
       const nameCol = headers.find(h => h.toLowerCase().includes('name'));
       const genderCol = headers.find(h => h.toLowerCase().includes('gender') || h.toLowerCase().includes('sex'));
       const emailCol = headers.find(h => h.toLowerCase().includes('email'));
+      const codeCol = headers.find(h => h.toLowerCase().includes('code') || h.toLowerCase().includes('access'));
 
       if (!nameCol) {
         setMessage({ text: 'Error: No "name" column found.', type: 'error' });
@@ -53,6 +54,7 @@ export function VoterManager({ voters, loading: parentLoading }: VoterManagerPro
         if (!name) return;
 
         const email = emailCol ? (row[emailCol] || '').trim().toLowerCase() : '';
+        const accessCode = codeCol ? (row[codeCol] || '').toString().trim() : Math.floor(100000 + Math.random() * 900000).toString();
         
         let gender: 'Male' | 'Female' = 'Male';
         if (genderCol) {
@@ -68,6 +70,7 @@ export function VoterManager({ voters, loading: parentLoading }: VoterManagerPro
           name_normalized: name.toLowerCase(),
           gender,
           email,
+          accessCode,
           status: 'Not Voted',
         });
         importCount++;

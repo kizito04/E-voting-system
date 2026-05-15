@@ -5,6 +5,7 @@ export interface Voter {
   gender: 'Male' | 'Female';
   email: string;
   status: 'Not Voted' | 'In Progress' | 'Completed';
+  accessCode: string;
   completedAt?: any;
   sessionId?: string;
 }

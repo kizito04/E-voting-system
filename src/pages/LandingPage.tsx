@@ -14,6 +14,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onLogin, voter }: LandingPageProps) {
   const [voterName, setVoterName] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
     setError(null);
 
     const trimmedName = voterName.trim().toLowerCase();
+    const trimmedCode = accessCode.trim();
     
     try {
       const votersRef = collection(db, 'voters');
@@ -38,6 +40,13 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
 
       const voterDoc = querySnapshot.docs[0];
       const voterData = { id: voterDoc.id, ...voterDoc.data() } as Voter;
+
+      // Verify Access Code
+      if (voterData.accessCode !== trimmedCode) {
+        setError('Invalid Access Code. Please check your credentials.');
+        setLoading(false);
+        return;
+      }
 
       // Allow "ahaisibwe kizito" to vote unlimited times
       const isUnlimitedVoter = trimmedName === 'ahaisibwe kizito';
@@ -131,8 +140,16 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
                 type="text"
                 value={voterName}
                 onChange={(e) => setVoterName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300 mb-4"
                 placeholder="Full Legal Name"
+                required
+              />
+              <input
+                type="password"
+                value={accessCode}
+                onChange={(e) => setAccessCode(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300"
+                placeholder="Access Code"
                 required
               />
             </div>
