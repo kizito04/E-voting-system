@@ -16,8 +16,8 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight">System Analytics</h2>
-        <p className="text-sm text-slate-500 font-medium">Real-time overview of the current election status and participation.</p>
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Election Analytics</h2>
+        <p className="text-sm text-slate-500 font-medium">Overview of the current election status.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -31,7 +31,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
             <div className="bg-indigo-50 p-4 rounded-2xl">
               <Users className="h-6 w-6 text-indigo-600" />
             </div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Participation</span>
+            <span className="text-xs font-bold uppercase text-slate-800 tracking-[0.2em]">Participation</span>
           </div>
           <div className="space-y-1">
              <div className="text-5xl font-black text-slate-900 leading-none">
@@ -57,7 +57,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
             <div className="bg-amber-50 p-4 rounded-2xl">
               <Trophy className="h-6 w-6 text-amber-600" />
             </div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Active Fields</span>
+            <span className="text-xs font-bold uppercase text-slate-800 tracking-[0.2em]">Active Fields</span>
           </div>
           <div className="space-y-1">
              <div className="text-5xl font-black text-slate-900 leading-none">{positions.length}</div>
@@ -80,7 +80,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
             <div className="bg-emerald-50 p-4 rounded-2xl">
               <BarChart3 className="h-6 w-6 text-emerald-600" />
             </div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-[0.2em]">Progress</span>
+            <span className="text-xs font-bold uppercase text-slate-800 tracking-[0.2em]">Progress</span>
           </div>
           <div className="space-y-1">
              <div className="text-5xl font-black text-slate-900 leading-none">{progressPercentage}%</div>
@@ -101,19 +101,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
         </motion.div>
       </div>
 
-      {/* Additional Visual Context */}
-      <div className="bg-slate-900 p-12 rounded-[3rem] text-white overflow-hidden relative group">
-        <div className="relative z-10">
-          <h3 className="text-2xl font-bold mb-4">Election Integrity Check</h3>
-          <p className="text-slate-400 text-sm max-w-md leading-relaxed">
-            All data shown here is fetched directly from encrypted Firestore collections. 
-            Real-time synchronization ensures that no ballot is missed during the live counting phase.
-          </p>
-        </div>
-        <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:opacity-20 transition-opacity">
-           <BarChart3 className="h-40 w-40" />
-        </div>
-      </div>
+
     </div>
   );
 }

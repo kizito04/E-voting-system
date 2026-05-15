@@ -102,21 +102,17 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <div className="bg-indigo-100 inline-block px-4 py-1.5 rounded-full text-indigo-700 text-xs font-bold uppercase tracking-widest mb-6">
-            E-Voting
-          </div>
+          
           <h1 className="text-3xl font-extrabold text-slate-900 leading-[1.1] mb-6">
             KISA KYU<br/>
           </h1>
           <div className="flex gap-4 items-center text-sm font-semibold text-slate-400">
-             <div className="flex -space-x-3">
-               {[1,2,3].map(i => (
-                 <div key={i} className="h-10 w-10 rounded-full border-4 border-slate-50 bg-slate-200">
-                   <img src={`https://picsum.photos/seed/voter${i}/100/100`} className="rounded-full" />
-                 </div>
-               ))}
-             </div>
-             <span>Active Election Ongoing</span>
+             
+             <span>
+            <div className="bg-indigo-100 inline-block px-4 py-1.5 rounded-full text-indigo-700 text-xs font-bold uppercase tracking-widest mb-6">
+            E-Voting
+          </div>
+             </span>
           </div>
         </motion.div>
 

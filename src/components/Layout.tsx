@@ -19,7 +19,7 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
             <div className="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm shadow-indigo-200">
               <Vote className="h-5 w-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">SecureVote</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">Secure E-Vote</span>
           </Link>
           
           <nav className="flex items-center gap-6">
@@ -61,14 +61,13 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
             <div className="flex flex-col items-center md:items-start">
                <div className="flex items-center gap-2 mb-2">
                  <Vote className="h-4 w-4 text-indigo-600" />
-                 <span className="font-bold text-slate-900">SecureVote</span>
+                 <span className="font-bold text-slate-900">Secure E-Vote</span>
                </div>
-               <p className="text-xs text-slate-400">© 2026 SecureVote Election Infrastructure. All Rights Reserved.</p>
+               <p className="text-xs text-slate-400">© 2026 E-Vote Election Infrastructure. All Rights Reserved.</p>
             </div>
             <div className="flex gap-8 text-[11px] font-bold uppercase tracking-widest">
               <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
               <a href="#" className="hover:text-indigo-600 transition-colors">Terms</a>
-              <a href="#" className="hover:text-indigo-600 transition-colors">Audit Report</a>
             </div>
           </div>
         </div>
