@@ -163,35 +163,6 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           </form>
         </motion.div>
       </div>
-
-      <div className="mt-24 w-full flex justify-center">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center max-w-sm w-full"
-        >
-          <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
-             <BarChart3 className="h-6 w-6 text-indigo-600" />
-          </div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Live Election Metrics</h3>
-          
-          <div className="flex flex-col gap-3 w-full">
-            <button 
-              onClick={() => navigate('/analytics')}
-              className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm group"
-            >
-              Access Dashboard <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-            </button>
-            
-            <button 
-              onClick={() => navigate('/results')}
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 group"
-            >
-              Access Results <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </motion.div>
-      </div>
     </div>
   );
 }

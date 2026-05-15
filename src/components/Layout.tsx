@@ -67,6 +67,7 @@ export function Layout({ children, voter, onLogout }: LayoutProps) {
             </div>
             <div className="flex gap-8 text-[11px] font-bold uppercase tracking-widest">
               <a href="#" className="hover:text-indigo-600 transition-colors">Privacy</a>
+              <Link to="/admin" className="text-slate-400 hover:text-indigo-600 transition-colors">Admin</Link>
               <a href="#" className="hover:text-indigo-600 transition-colors">Terms</a>
             </div>
           </div>
