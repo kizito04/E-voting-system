@@ -10,6 +10,7 @@ import { PositionManager } from '../components/admin/PositionManager';
 import { CandidateManager } from '../components/admin/CandidateManager';
 import { VoterManager } from '../components/admin/VoterManager';
 import { ResultsDashboard } from '../components/admin/ResultsDashboard';
+import { AnalyticsOverview } from '../components/admin/AnalyticsOverview';
 
 export function AdminDashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -18,7 +19,7 @@ export function AdminDashboard() {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState<'results' | 'positions' | 'candidates' | 'voters'>('results');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'results' | 'positions' | 'candidates' | 'voters'>('analytics');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -109,7 +110,8 @@ export function AdminDashboard() {
           <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight mb-3">Control Center</h1>
           <div className="flex flex-wrap items-center gap-6">
             {[
-              { id: 'results', label: 'Live Tally', icon: BarChart3 },
+              { id: 'analytics', label: 'Overview', icon: BarChart3 },
+              { id: 'results', label: 'Live Tally', icon: Users },
               { id: 'voters', label: 'Voters', icon: Users },
               { id: 'positions', label: 'Positions', icon: LayoutGrid },
               { id: 'candidates', label: 'Candidates', icon: Settings2 },
@@ -147,6 +149,9 @@ export function AdminDashboard() {
       </div>
 
       <div className="mt-8">
+        {activeTab === 'analytics' && (
+          <AnalyticsOverview voters={voters} positions={positions} />
+        )}
         {activeTab === 'results' && (
           <ResultsDashboard positions={positions} candidates={candidates} votes={votes} voters={voters} />
         )}
