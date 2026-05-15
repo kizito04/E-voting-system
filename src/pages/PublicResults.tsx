@@ -60,15 +60,10 @@ export function PublicResults() {
             <ArrowLeft className="h-3 w-3 group-hover:-translate-x-1 transition-transform" />
             Back to Home
           </button>
-          <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight flex items-center gap-4">
-            Live Tally Reports
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight flex items-center gap-4">
+            Tally Reports
             <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse shadow-sm shadow-green-200" />
           </h1>
-          <p className="text-slate-500 font-medium mt-2">Real-time candidate reports and demographic voting distributions.</p>
-        </div>
-        <div className="bg-indigo-600 text-white px-6 py-3 rounded-2xl flex items-center gap-3 shadow-lg shadow-indigo-200">
-           <BarChart3 className="h-5 w-5" />
-           <span className="text-sm font-bold uppercase tracking-widest">Live Results</span>
         </div>
       </div>
 

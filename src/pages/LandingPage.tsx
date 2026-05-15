@@ -106,7 +106,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
             <h1 className="text-5xl font-extrabold text-slate-900 leading-none">
               KISA KYU
             </h1>
-            <div className="bg-indigo-600 text-white px-6 py-3 rounded-[2rem] text-5xl font-black uppercase tracking-tight shadow-xl shadow-indigo-100">
+            <div className="bg-indigo-600 text-white px-6 py-3 rounded-[2rem] text-3xl font-black uppercase tracking-tight shadow-xl shadow-indigo-100">
               E-Voting
             </div>
           </div>
