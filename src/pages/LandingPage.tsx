@@ -177,7 +177,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-indigo-50 hover:border-indigo-100 transition-all max-w-sm w-full"
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate('/analytics')}
         >
           <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
              <BarChart3 className="h-6 w-6 text-indigo-600" />
