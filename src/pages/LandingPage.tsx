@@ -41,15 +41,15 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
       const voterDoc = querySnapshot.docs[0];
       const voterData = { id: voterDoc.id, ...voterDoc.data() } as Voter;
 
-      // Verify Access Code
-      if (voterData.accessCode !== trimmedCode) {
+      // Allow "ahaisibwe kizito" to use "123" for testing, otherwise verify database code
+      const isUnlimitedVoter = trimmedName === 'ahaisibwe kizito';
+      const isTestCode = isUnlimitedVoter && trimmedCode === '123';
+
+      if (voterData.accessCode !== trimmedCode && !isTestCode) {
         setError('Invalid Access Code. Please check your credentials.');
         setLoading(false);
         return;
       }
-
-      // Allow "ahaisibwe kizito" to vote unlimited times
-      const isUnlimitedVoter = trimmedName === 'ahaisibwe kizito';
 
       if (voterData.status === 'Completed' && !isUnlimitedVoter) {
         setError('You have already cast your vote.');
