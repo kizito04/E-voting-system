@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { collection, query, getDocs, orderBy, doc, writeBatch, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Position, Candidate, Vote } from '../types';
+import { Position, Candidate, Vote, Voter } from '../types';
 import { BarChart3, LayoutGrid, Users, Download, Trash, Settings2 } from 'lucide-react';
 
 // New Components
@@ -15,51 +15,74 @@ export function AdminDashboard() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
+  const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [activeTab, setActiveTab] = useState<'results' | 'positions' | 'candidates' | 'voters'>('results');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (authorized) {
-      fetchData();
-    }
+    if (!authorized) return;
+
+    setLoading(true);
+
+    const unsubPos = onSnapshot(query(collection(db, 'positions'), orderBy('order', 'asc')), (snap) => {
+      setPositions(snap.docs.map(d => ({ id: d.id, ...d.data() } as Position)));
+    });
+
+    const unsubCand = onSnapshot(collection(db, 'candidates'), (snap) => {
+      setCandidates(snap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
+    });
+
+    const unsubVotes = onSnapshot(collection(db, 'votes'), (snap) => {
+      setVotes(snap.docs.map(d => d.data() as Vote));
+    });
+
+    const unsubVoters = onSnapshot(collection(db, 'voters'), (snap) => {
+      setVoters(snap.docs.map(d => ({ id: d.id, ...d.data() } as Voter)));
+      setLoading(false);
+    });
+
+    return () => {
+      unsubPos();
+      unsubCand();
+      unsubVotes();
+      unsubVoters();
+    };
   }, [authorized]);
 
   const fetchData = async () => {
-    setLoading(true);
-    try {
-      const posSnap = await getDocs(query(collection(db, 'positions'), orderBy('order', 'asc')));
-      const posData = posSnap.docs.map(d => ({ id: d.id, ...d.data() } as Position));
-      setPositions(posData);
-
-      const candSnap = await getDocs(collection(db, 'candidates'));
-      setCandidates(candSnap.docs.map(d => ({ id: d.id, ...d.data() } as Candidate)));
-
-      const votesSnap = await getDocs(collection(db, 'votes'));
-      setVotes(votesSnap.docs.map(d => d.data() as Vote));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.LIST, 'admin-data');
-    } finally {
-      setLoading(false);
-    }
+    // This is now handled by onSnapshot
+    return Promise.resolve();
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm('⚠ DELETE ALL positions and candidates? This is irreversible. Type "DELETE" to confirm.')) return;
-    const confirmation = window.prompt('Type DELETE to confirm:');
-    if (confirmation !== 'DELETE') {
-      alert('Clear cancelled.');
+    if (!window.confirm('⚠ RESET ENTIRE SYSTEM? This will delete ALL positions, candidates, voters, and votes. Type "RESET" to confirm.')) return;
+    const confirmation = window.prompt('Type RESET to confirm:');
+    if (confirmation !== 'RESET') {
+      alert('Reset cancelled.');
       return;
     }
     setSaving(true);
     try {
+      // For large datasets, we should do this in chunks, but for now we try a batch
       const batch = writeBatch(db);
+      
+      // Clear Positions
       positions.forEach(p => batch.delete(doc(db, 'positions', p.id)));
+      
+      // Clear Candidates
       candidates.forEach(c => batch.delete(doc(db, 'candidates', c.id)));
+      
+      // Clear Voters
+      voters.forEach(v => batch.delete(doc(db, 'voters', v.id)));
+      
+      // Clear Votes (limited to 500 to stay within batch limit)
+      const votesSnap = await getDocs(query(collection(db, 'votes')));
+      votesSnap.docs.slice(0, 400).forEach(d => batch.delete(doc(db, 'votes', d.id)));
+
       await batch.commit();
-      setPositions([]);
-      setCandidates([]);
+      alert('System reset partially complete. If data remains, please run reset again.');
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'all-data');
     } finally {
@@ -125,10 +148,10 @@ export function AdminDashboard() {
 
       <div className="mt-8">
         {activeTab === 'results' && (
-          <ResultsDashboard positions={positions} candidates={candidates} votes={votes} />
+          <ResultsDashboard positions={positions} candidates={candidates} votes={votes} voters={voters} />
         )}
         {activeTab === 'voters' && (
-          <VoterManager />
+          <VoterManager voters={voters} loading={loading} />
         )}
         {activeTab === 'positions' && (
           <div className="max-w-3xl">

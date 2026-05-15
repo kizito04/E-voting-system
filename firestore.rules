@@ -45,7 +45,7 @@ service cloud.firestore {
     match /voters/{voterId} {
       // Gatekeeper needs to find the voter and query by name
       allow get: if true;
-      allow list: if true; // Required for the query by name_normalized
+      allow list: if true; 
 
       // Update status to 'In Progress' (Start) or 'Completed' (Submit)
       allow update: if (
@@ -57,18 +57,18 @@ service cloud.firestore {
         )
       );
       
-      // Development seed
-      allow create: if true; 
+      // Admin operations
+      allow create, delete: if true; 
     }
 
     // Static collections
     match /positions/{posId} {
       allow read: if true;
-      allow create, update: if true; // Allowed for admin organization
+      allow create, update, delete: if true; // Allowed for admin organization
     }
     match /candidates/{candId} {
       allow read: if true;
-      allow create, update: if true; // Allowed for admin organization
+      allow create, update, delete: if true; // Allowed for admin organization
     }
 
     // 8. Secure List Queries (Votes)
@@ -76,9 +76,7 @@ service cloud.firestore {
       allow create: if isValidVote(incoming());
       
       // Admin results: allow reading everything for results
-      // In a real app we'd verify admin status
-      allow read: if true; 
-      allow list: if true;
+      allow read, list, delete: if true; 
     }
   }
 }

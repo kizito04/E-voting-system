@@ -4,28 +4,15 @@ import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Voter } from '../../types';
 import { Upload, FileSpreadsheet, Trash, Users, Check, X, Search } from 'lucide-react';
 
-export function VoterManager() {
-  const [voters, setVoters] = useState<Voter[]>([]);
-  const [loading, setLoading] = useState(true);
+interface VoterManagerProps {
+  voters: Voter[];
+  loading: boolean;
+}
+
+export function VoterManager({ voters, loading: parentLoading }: VoterManagerProps) {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    fetchVoters();
-  }, []);
-
-  const fetchVoters = async () => {
-    setLoading(true);
-    try {
-      const snap = await getDocs(query(collection(db, 'voters'), orderBy('name', 'asc')));
-      setVoters(snap.docs.map(d => ({ id: d.id, ...d.data() } as Voter)));
-    } catch (err) {
-      handleFirestoreError(err, OperationType.LIST, 'voters');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -94,7 +81,6 @@ export function VoterManager() {
 
       await batch.commit();
       setMessage({ text: `Successfully imported ${importCount} voters.`, type: 'success' });
-      await fetchVoters();
     } catch (err) {
       console.error('Excel upload error:', err);
       setMessage({ text: 'Error: Failed to parse Excel file.', type: 'error' });
@@ -106,17 +92,13 @@ export function VoterManager() {
 
   const handleClearVoters = async () => {
     if (!window.confirm('⚠ DELETE ALL registered voters? This cannot be undone.')) return;
-    setLoading(true);
     try {
       const batch = writeBatch(db);
       voters.forEach(v => batch.delete(doc(db, 'voters', v.id)));
       await batch.commit();
-      setVoters([]);
       setMessage({ text: 'All voters cleared successfully.', type: 'success' });
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, 'voters');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -198,7 +180,7 @@ export function VoterManager() {
 
           <button
             onClick={handleClearVoters}
-            disabled={voters.length === 0 || loading}
+            disabled={voters.length === 0 || parentLoading}
             className="w-full bg-red-50 text-red-600 border border-red-100 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-all disabled:opacity-50"
           >
             <Trash className="h-5 w-5" />

@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChevronLeft, ChevronRight, Users, Trophy, BarChart3 } from 'lucide-react';
-import { Position, Candidate, Vote } from '../../types';
+import { Position, Candidate, Vote, Voter } from '../../types';
 
 interface ResultsDashboardProps {
   positions: Position[];
   candidates: Candidate[];
   votes: Vote[];
+  voters: Voter[];
 }
 
 const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
-export function ResultsDashboard({ positions, candidates, votes }: ResultsDashboardProps) {
+export function ResultsDashboard({ positions, candidates, votes, voters }: ResultsDashboardProps) {
   const [currentPosIndex, setCurrentPosIndex] = useState(0);
 
   const currentPosition = positions[currentPosIndex];
@@ -32,6 +33,11 @@ export function ResultsDashboard({ positions, candidates, votes }: ResultsDashbo
 
   const chartData = results.map(r => ({ name: r.name, value: r.total }));
 
+  // Progress stats
+  const totalVoters = voters.length;
+  const votedCount = voters.filter(v => v.status === 'Completed').length;
+  const progressPercentage = totalVoters > 0 ? Math.round((votedCount / totalVoters) * 100) : 0;
+
   return (
     <AnimatePresence mode="wait">
       <motion.div 
@@ -44,13 +50,13 @@ export function ResultsDashboard({ positions, candidates, votes }: ResultsDashbo
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40">
             <div className="flex justify-between items-start mb-6">
-              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest">Aggregate Count</span>
+              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest">Voter Participation</span>
               <Users className="h-5 w-5 text-indigo-600" />
             </div>
-            <div className="text-4xl font-extrabold text-slate-900">{votes.length}</div>
+            <div className="text-4xl font-extrabold text-slate-900">{votedCount} <span className="text-sm font-medium text-slate-400">/ {totalVoters}</span></div>
             <div className="flex items-center gap-2 mt-4">
               <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Synchronizing Live</span>
+              <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Live Register Sync</span>
             </div>
           </div>
           <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40">
@@ -59,15 +65,21 @@ export function ResultsDashboard({ positions, candidates, votes }: ResultsDashbo
               <Trophy className="h-5 w-5 text-indigo-600" />
             </div>
             <div className="text-4xl font-extrabold text-slate-900">{positions.length}</div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Elective Positions</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Registered Positions</p>
           </div>
           <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/40">
             <div className="flex justify-between items-start mb-6">
-              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest">Verified Feed</span>
+              <span className="text-[11px] font-bold uppercase text-slate-400 tracking-widest">Voting Progress</span>
               <div className="h-5 w-5 bg-indigo-600 rounded-lg flex items-center justify-center"><div className="h-1.5 w-1.5 bg-white rounded-full animate-ping" /></div>
             </div>
-            <div className="text-4xl font-extrabold text-slate-900">100%</div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Connection Integrity</p>
+            <div className="text-4xl font-extrabold text-slate-900">{progressPercentage}%</div>
+            <div className="h-1.5 w-full bg-slate-100 rounded-full mt-4 overflow-hidden">
+               <motion.div 
+                 initial={{ width: 0 }}
+                 animate={{ width: `${progressPercentage}%` }}
+                 className="h-full bg-indigo-600 rounded-full"
+               />
+            </div>
           </div>
         </div>
 
