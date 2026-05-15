@@ -51,6 +51,16 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
   const currentPosition = positionsWithCandidates[currentStep];
   const positionCandidates = candidates.filter(c => c.positionId === currentPosition?.id);
 
+  // Auto-select if only one candidate is available for this position
+  useEffect(() => {
+    if (currentPosition && positionCandidates.length === 1 && !selections[currentPosition.id]) {
+      setSelections(prev => ({
+        ...prev,
+        [currentPosition.id]: positionCandidates[0].id
+      }));
+    }
+  }, [currentStep, positionCandidates, currentPosition, selections]);
+
   const handleSelect = (candidateId: string) => {
     if (!currentPosition) return;
     setSelections(prev => ({

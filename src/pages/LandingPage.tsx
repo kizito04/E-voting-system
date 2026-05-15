@@ -102,17 +102,13 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          
-          <h1 className="text-4xl font-extrabold text-slate-900 leading-[1.1] mb-6">
-            KISA KYU
-          </h1>
-          <div className="flex gap-4 items-center text-sm font-semibold text-slate-400">
-             
-             <span>
-            <div className="bg-indigo-100 inline-block px-4 py-1.5 rounded-full text-indigo-700 text-xs font-bold uppercase tracking-widest mb-6">
-            E-Voting
-          </div>
-             </span>
+          <div className="flex items-center gap-4 mb-6">
+            <h1 className="text-5xl font-extrabold text-slate-900 leading-none">
+              KISA KYU
+            </h1>
+            <div className="bg-indigo-600 text-white px-6 py-3 rounded-[2rem] text-5xl font-black uppercase tracking-tight shadow-xl shadow-indigo-100">
+              E-Voting
+            </div>
           </div>
         </motion.div>
 
@@ -172,17 +168,28 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center group cursor-pointer hover:bg-indigo-50 hover:border-indigo-100 transition-all max-w-sm w-full"
-          onClick={() => navigate('/analytics')}
+          className="bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center max-w-sm w-full"
         >
-          <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+          <div className="h-12 w-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm">
              <BarChart3 className="h-6 w-6 text-indigo-600" />
           </div>
-          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-2">Live Tally Dashboard</h3>
-          <p className="text-xs text-slate-400 mb-6">Authorized access to real-time election results and demographic analytics.</p>
-          <button className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2 group-hover:gap-3 transition-all">
-            Access Results <ArrowRight className="h-3 w-3" />
-          </button>
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Live Election Metrics</h3>
+          
+          <div className="flex flex-col gap-3 w-full">
+            <button 
+              onClick={() => navigate('/analytics')}
+              className="w-full py-4 bg-white border border-slate-200 rounded-2xl text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm group"
+            >
+              Access Dashboard <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+            </button>
+            
+            <button 
+              onClick={() => navigate('/results')}
+              className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 group"
+            >
+              Access Results <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
         </motion.div>
       </div>
     </div>

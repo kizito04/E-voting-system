@@ -81,13 +81,13 @@ export function ResultsDashboard({ positions, candidates, votes, voters }: Resul
                     </div>
                     <h4 className="text-lg font-bold text-slate-900 mb-1 leading-tight">{r.name}</h4>
                     <div className="flex gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-6">
-                       <span className="flex items-center gap-1">M: {r.males}</span>
-                       <span className="flex items-center gap-1">F: {r.females}</span>
+                       <span className="flex items-center gap-1">Male: {r.males}</span>
+                       <span className="flex items-center gap-1">Female: {r.females}</span>
                     </div>
                     
                     <div className="w-full space-y-2 mt-auto">
                       <div className="flex justify-between items-end mb-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Election Share</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Votes</span>
                         <span className="text-xl font-black text-indigo-600">{r.total} <span className="text-[10px] text-slate-300">Votes</span></span>
                       </div>
                       <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-50">
