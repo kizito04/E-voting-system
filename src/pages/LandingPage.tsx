@@ -14,7 +14,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onLogin, voter }: LandingPageProps) {
   const [voterName, setVoterName] = useState('');
-  const [accessCode, setAccessCode] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +26,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
     setError(null);
 
     const trimmedName = voterName.trim().toLowerCase();
-    const trimmedCode = accessCode.trim();
+    const trimmedNumber = studentNumber.trim();
     
     try {
       const votersRef = collection(db, 'voters');
@@ -44,10 +44,10 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
 
       // Allow "ahaisibwe kizito" to use "123" for testing, otherwise verify database code
       const isUnlimitedVoter = trimmedName === 'ahaisibwe kizito';
-      const isTestCode = isUnlimitedVoter && trimmedCode === '123';
+      const isTestNumber = isUnlimitedVoter && trimmedNumber === '123';
 
-      if (voterData.accessCode !== trimmedCode && !isTestCode) {
-        setError('Invalid Access Code. Please check your credentials.');
+      if (voterData.studentNumber !== trimmedNumber && !isTestNumber) {
+        setError('Invalid Student Number. Please check your credentials.');
         setLoading(false);
         return;
       }
@@ -149,10 +149,10 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  value={accessCode}
-                  onChange={(e) => setAccessCode(e.target.value)}
+                  value={studentNumber}
+                  onChange={(e) => setStudentNumber(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300 pr-12"
-                  placeholder="Access Code"
+                  placeholder="Student Number"
                   required
                 />
                 <button

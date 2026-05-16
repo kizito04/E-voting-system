@@ -244,7 +244,7 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
             <button
               onClick={handleNext}
               disabled={!currentSelection}
-              className="bg-indigo-600 text-white h-14 px-10 rounded-[2rem] font-bold hover:bg-indigo-700 transition-all disabled:opacity-30 disabled:grayscale flex items-center gap-3 group active:scale-95"
+              className="bg-indigo-600 text-white h-11 px-6 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-30 disabled:grayscale flex items-center gap-3 group active:scale-95"
             >
               Next Position
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -253,7 +253,7 @@ export function VotingSteps({ voter, onLogout }: VotingStepsProps) {
             <button
               onClick={handleSubmitAll}
               disabled={!currentSelection || submitting}
-              className="bg-green-500 text-slate-900 h-14 px-10 rounded-[2rem] font-bold hover:bg-green-600 transition-all disabled:opacity-30 flex items-center gap-3 active:scale-95 shadow-lg shadow-green-500/20"
+              className="bg-green-500 text-slate-900 h-11 px-6 rounded-xl text-sm font-bold hover:bg-green-600 transition-all disabled:opacity-30 flex items-center gap-3 active:scale-95 shadow-lg shadow-green-500/20"
             >
               {submitting ? 'Submitting...' : 'Final Submission'}
               <Check className="h-5 w-5 stroke-[3px]" />
