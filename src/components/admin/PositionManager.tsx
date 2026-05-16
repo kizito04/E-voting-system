@@ -106,7 +106,7 @@ export function PositionManager({ positions, candidates, onRefresh }: PositionMa
   };
 
   return (
-    <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+    <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
       <div className="flex items-center gap-4 mb-10">
         <div className="bg-indigo-50 p-3 rounded-2xl">
           <LayoutGrid className="h-6 w-6 text-indigo-600" />

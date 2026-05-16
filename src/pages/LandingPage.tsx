@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/fire
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Voter } from '../types';
 import { motion } from 'motion/react';
-import { UserCheck, AlertCircle, ArrowRight, Shield, BarChart3 } from 'lucide-react';
+import { UserCheck, AlertCircle, ArrowRight, Shield, BarChart3, Eye, EyeOff } from 'lucide-react';
 
 interface LandingPageProps {
   onLogin: (voter: Voter) => void;
@@ -17,6 +17,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
   const [accessCode, setAccessCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleGatekeeperAuth = async (e: React.FormEvent) => {
@@ -79,7 +80,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white p-12 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 max-w-md w-full"
+          className="bg-amber-50 p-12 rounded-2xl border border-amber-200 shadow-xl shadow-slate-200/50 max-w-md w-full"
         >
           <div className="h-20 w-20 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
             <UserCheck className="h-10 w-10 text-indigo-600" />
@@ -106,25 +107,26 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
 
   return (
     <div className="flex flex-col items-center justify-center pt-4 pb-20">
-      <div className="grid lg:grid-cols-2 gap-20 items-center max-w-6xl w-full">
+      <div className="flex flex-col items-center max-w-md w-full gap-8">
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
         >
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex flex-col items-center justify-center gap-2">
             <h1 className="text-5xl font-extrabold text-slate-900 leading-none">
               KISA KYU
             </h1>
-            <div className="bg-indigo-600 text-white px-6 py-3 rounded-[2rem] text-3xl font-black uppercase tracking-tight shadow-xl shadow-indigo-100">
+            <div className="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-sm font-black uppercase tracking-tight shadow-md shadow-indigo-100">
               E-Voting
             </div>
           </div>
         </motion.div>
 
         <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-indigo-100/40 w-full"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 p-8 rounded-2xl border border-amber-200 shadow-2xl shadow-indigo-100/40 w-full"
         >
           <div className="mb-10 text-center">
             <div className="bg-slate-50 h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -144,14 +146,23 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
                 placeholder="Full Legal Name"
                 required
               />
-              <input
-                type="password"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300"
-                placeholder="Access Code"
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={accessCode}
+                  onChange={(e) => setAccessCode(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all text-slate-900 font-semibold text-lg placeholder:text-slate-300 pr-12"
+                  placeholder="Access Code"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
 
             {error && (

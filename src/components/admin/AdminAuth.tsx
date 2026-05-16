@@ -23,7 +23,7 @@ export function AdminAuth({ onLogin }: AdminAuthProps) {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white p-12 rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-indigo-100 max-w-md w-full text-center"
+        className="bg-amber-50 p-10 rounded-2xl border border-amber-200 shadow-2xl shadow-indigo-100 max-w-md w-full text-center"
       >
         <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
           <Settings2 className="h-8 w-8 text-indigo-600" />

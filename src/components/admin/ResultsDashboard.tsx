@@ -42,7 +42,7 @@ export function ResultsDashboard({ positions, candidates, votes, voters }: Resul
         className="space-y-8"
       >
         {/* Pagination Controls */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm">
+        <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 flex items-center justify-between shadow-sm">
             <div className="pl-4">
               <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest block mb-1">Reports</span>
               <h3 className="text-lg font-bold text-slate-900">{currentPosition?.title} Report</h3>
@@ -70,7 +70,7 @@ export function ResultsDashboard({ positions, candidates, votes, voters }: Resul
             <div className="p-10 border-b lg:border-b-0 lg:border-r border-slate-100">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {results.map((r) => (
-                  <div key={r.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group flex flex-col items-center text-center">
+                  <div key={r.id} className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-sm hover:shadow-md transition-all group flex flex-col items-center text-center">
                     <div className="h-24 w-24 rounded-2xl overflow-hidden bg-slate-100 border-4 border-slate-50 mb-4 group-hover:scale-105 transition-transform">
                        <img 
                          src={candidates.find(c => c.id === r.id)?.photoUrl} 

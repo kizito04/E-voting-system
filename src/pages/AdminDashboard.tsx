@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, orderBy, doc, writeBatch, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Position, Candidate, Vote, Voter } from '../types';
-import { BarChart3, LayoutGrid, Users, Download, Trash, Settings2 } from 'lucide-react';
+import { BarChart3, LayoutGrid, Users, Download, Trash, Settings as SettingsIcon, UserCircle } from 'lucide-react';
 
 // New Components
 import { AdminAuth } from '../components/admin/AdminAuth';
@@ -19,7 +19,7 @@ export function AdminDashboard() {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'results' | 'positions' | 'candidates' | 'voters'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'results' | 'positions' | 'candidates' | 'voters' | 'settings'>('analytics');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -114,7 +114,8 @@ export function AdminDashboard() {
               { id: 'results', label: 'Live Tally', icon: Users },
               { id: 'voters', label: 'Voters', icon: Users },
               { id: 'positions', label: 'Positions', icon: LayoutGrid },
-              { id: 'candidates', label: 'Candidates', icon: Settings2 },
+              { id: 'candidates', label: 'Candidates', icon: UserCircle },
+              { id: 'settings', label: 'Settings', icon: SettingsIcon },
             ].map(tab => (
               <button 
                 key={tab.id}
@@ -130,21 +131,15 @@ export function AdminDashboard() {
           </div>
         </div>
         <div className="flex gap-4">
-          <button 
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all text-slate-600 shadow-sm"
-          >
-            <Download className="h-4 w-4" />
-            Export Results
-          </button>
-          <button
-            onClick={handleClearAll}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 bg-red-50 border border-red-100 rounded-2xl text-xs font-bold text-red-600 uppercase tracking-widest hover:bg-red-100 transition-all disabled:opacity-50"
-          >
-            <Trash className="h-4 w-4" />
-            Reset System
-          </button>
+          {(activeTab === 'results' || activeTab === 'voters') && (
+            <button 
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all text-slate-600 shadow-sm"
+            >
+              <Download className="h-4 w-4" />
+              {activeTab === 'voters' ? 'Export Registered Voters' : 'Export Reports'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -165,6 +160,27 @@ export function AdminDashboard() {
         )}
         {activeTab === 'candidates' && (
           <CandidateManager positions={positions} candidates={candidates} onRefresh={fetchData} />
+        )}
+        {activeTab === 'settings' && (
+          <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30 max-w-xl">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <SettingsIcon className="h-6 w-6 text-slate-500" /> System Settings
+            </h2>
+            <div className="space-y-6">
+              <div className="p-6 bg-red-50 rounded-2xl border border-red-100">
+                <h3 className="text-lg font-bold text-red-700 mb-2">Danger Zone</h3>
+                <p className="text-sm text-red-600 mb-6 font-medium">Resetting the system will delete all positions, candidates, voters, and votes. This action cannot be undone.</p>
+                <button
+                  onClick={handleClearAll}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-3 bg-red-600 border border-red-700 rounded-2xl text-xs font-bold text-white uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
+                >
+                  <Trash className="h-4 w-4" />
+                  Reset System
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

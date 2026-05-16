@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Position, Candidate } from '../../types';
-import { Plus, Users, List } from 'lucide-react';
+import { Plus, Users, List, User } from 'lucide-react';
 
 interface CandidateManagerProps {
   positions: Position[];
@@ -28,10 +28,7 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
   const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCandPosId || !newCandName.trim()) return;
-    if (!newCandPhoto.trim()) {
-      alert('Please paste a photo URL from ImgBB or another image host.');
-      return;
-    }
+
     setSaving(true);
     try {
       const posSlug = slugify(positions.find(p => p.id === newCandPosId)?.title || newCandPosId);
@@ -88,7 +85,7 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
       </div>
 
       {view === 'add' ? (
-        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+        <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
           <div className="flex items-center gap-4 mb-10">
             <div className="bg-indigo-50 p-3 rounded-2xl">
               <Users className="h-6 w-6 text-indigo-600" />
@@ -124,7 +121,6 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-1">Photo URL (ImgBB)</label>
                 <input
                   type="url"
-                  required
                   value={newCandPhoto}
                   onChange={(e) => setNewCandPhoto(e.target.value)}
                   placeholder="https://i.ibb.co/..."
@@ -153,7 +149,7 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
       ) : (
         <div className="space-y-8">
           {candidatesByPosition.map(({ position, candidates: posCandidates }) => (
-            <div key={position.id} className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl shadow-indigo-100/30">
+            <div key={position.id} className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
               <div className="flex items-center gap-3 mb-8">
                 <div className="bg-indigo-50 p-2 rounded-xl">
                   <Users className="h-5 w-5 text-indigo-600" />
@@ -172,13 +168,17 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {posCandidates.map(c => (
                     <div key={c.id} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 border-2 border-white shadow-sm">
-                        <img 
-                          src={c.photoUrl} 
-                          alt={c.name}
-                          className="h-full w-full object-cover"
-                          referrerPolicy="no-referrer"
-                        />
+                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-slate-200 flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm">
+                        {c.photoUrl ? (
+                          <img 
+                            src={c.photoUrl} 
+                            alt={c.name}
+                            className="h-full w-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <User className="h-6 w-6 text-slate-400" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-bold text-slate-900 text-sm truncate">{c.name}</p>
