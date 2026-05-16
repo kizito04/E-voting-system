@@ -114,7 +114,7 @@ export function VoterManager({ voters, loading: parentLoading }: VoterManagerPro
     <div className="space-y-8">
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Upload Section */}
-        <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
+        <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-xl shadow-indigo-100/30">
           <div className="flex items-center gap-4 mb-8">
             <div className="bg-indigo-50 p-3 rounded-2xl">
               <FileSpreadsheet className="h-6 w-6 text-indigo-600" />
@@ -159,7 +159,7 @@ export function VoterManager({ voters, loading: parentLoading }: VoterManagerPro
         </div>
 
         {/* Stats & Actions */}
-        <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30 flex flex-col justify-between">
+        <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-xl shadow-indigo-100/30 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-4 mb-8">
               <div className="bg-indigo-50 p-3 rounded-2xl">

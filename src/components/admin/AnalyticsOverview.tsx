@@ -25,7 +25,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 p-8 rounded-2xl border border-amber-200 shadow-xl shadow-slate-200/40"
+          className="bg-blue-50 p-8 rounded-2xl border border-blue-100 shadow-xl shadow-slate-200/40"
         >
           <div className="flex justify-between items-start mb-8">
             <div className="bg-indigo-50 p-4 rounded-2xl">
@@ -51,7 +51,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-amber-50 p-8 rounded-2xl border border-amber-200 shadow-xl shadow-slate-200/40"
+          className="bg-blue-50 p-8 rounded-2xl border border-blue-100 shadow-xl shadow-slate-200/40"
         >
           <div className="flex justify-between items-start mb-8">
             <div className="bg-amber-50 p-4 rounded-2xl">
@@ -74,7 +74,7 @@ export function AnalyticsOverview({ voters, positions }: AnalyticsOverviewProps)
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-amber-50 p-8 rounded-2xl border border-amber-200 shadow-xl shadow-slate-200/40"
+          className="bg-blue-50 p-8 rounded-2xl border border-blue-100 shadow-xl shadow-slate-200/40"
         >
           <div className="flex justify-between items-start mb-8">
             <div className="bg-emerald-50 p-4 rounded-2xl">

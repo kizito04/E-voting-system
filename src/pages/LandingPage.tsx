@@ -80,7 +80,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-amber-50 p-12 rounded-2xl border border-amber-200 shadow-xl shadow-slate-200/50 max-w-md w-full"
+          className="bg-blue-50 p-12 rounded-2xl border border-blue-100 shadow-xl shadow-slate-200/50 max-w-md w-full"
         >
           <div className="h-20 w-20 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-8">
             <UserCheck className="h-10 w-10 text-indigo-600" />
@@ -126,7 +126,7 @@ export function LandingPage({ onLogin, voter }: LandingPageProps) {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 p-8 rounded-2xl border border-amber-200 shadow-2xl shadow-indigo-100/40 w-full"
+          className="bg-blue-50 p-8 rounded-2xl border border-blue-100 shadow-2xl shadow-indigo-100/40 w-full"
         >
           <div className="mb-10 text-center">
             <div className="bg-slate-50 h-16 w-16 rounded-2xl flex items-center justify-center mx-auto mb-4">

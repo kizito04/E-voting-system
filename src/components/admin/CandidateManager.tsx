@@ -85,7 +85,7 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
       </div>
 
       {view === 'add' ? (
-        <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
+        <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-xl shadow-indigo-100/30">
           <div className="flex items-center gap-4 mb-10">
             <div className="bg-indigo-50 p-3 rounded-2xl">
               <Users className="h-6 w-6 text-indigo-600" />
@@ -149,7 +149,7 @@ export function CandidateManager({ positions, candidates, onRefresh }: Candidate
       ) : (
         <div className="space-y-8">
           {candidatesByPosition.map(({ position, candidates: posCandidates }) => (
-            <div key={position.id} className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30">
+            <div key={position.id} className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-xl shadow-indigo-100/30">
               <div className="flex items-center gap-3 mb-8">
                 <div className="bg-indigo-50 p-2 rounded-xl">
                   <Users className="h-5 w-5 text-indigo-600" />

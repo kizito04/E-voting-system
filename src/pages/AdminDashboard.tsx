@@ -162,7 +162,7 @@ export function AdminDashboard() {
           <CandidateManager positions={positions} candidates={candidates} onRefresh={fetchData} />
         )}
         {activeTab === 'settings' && (
-          <div className="bg-amber-50 p-6 rounded-xl border border-amber-200 shadow-xl shadow-indigo-100/30 max-w-xl">
+          <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-xl shadow-indigo-100/30 max-w-xl">
             <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
               <SettingsIcon className="h-6 w-6 text-slate-500" /> System Settings
             </h2>
